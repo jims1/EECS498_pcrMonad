@@ -1,0 +1,225 @@
+%% ----
+%%
+%% PCR Theory
+%%
+%% Author: Perry Alexander
+%% Date: Sat Jan 14 23:30:02 CST 2012
+%%
+%% Description: Basic model of a TPM register file
+%% 
+%% Dependencies:
+%%  None
+%%
+%% Todo: (key - => pending, + => done)
+%%
+%% ----
+
+pcr[PCRVAL:TYPE+] : THEORY
+  BEGIN
+
+  %% Locality type - check with spec
+  %% (8.6)
+  LOCALITY : TYPE = {n:nat | n<=4};
+  LOCALITY_SELECTION : TYPE = set[LOCALITY];
+
+  %% PCR array index type - check with spec
+  PCRINDEX : TYPE = {n:nat | n <=23};
+
+  %% (8.1) 
+  %% Should be bit map that indicates if a PCR is active or not.
+  PCR_SELECTION : TYPE = list[PCRINDEX]; % TODO: Should we make this into array?
+  
+  %PCRVAL : TYPE
+
+  PCR : datatype
+  begin
+    reset : reset?
+    resetOne : resetOne?
+    extend(pcr:PCR,hash:PCRVAL) : extend?
+  end PCR;
+
+  PCRVALUES : TYPE = ARRAY[PCRINDEX->PCR];
+
+  %% (8.2)
+%   PCR_COMPOSITE : TYPE = [#
+%   		% The indication of which PCR values are active
+%   		  select : PCR_SELECTION 
+% 		% Array of PCRVALUE structures. 
+% 		% The values come in the order specified by the select parameter
+% 		%  and are concatenated into a single blob.
+% 		, pcrValue : PCRVALUES
+%   		#];
+
+
+%   %% (8.3)
+%   PCR_INFO : TYPE = [#
+%   	   % Selection of PCRs to which the data or key is bound
+%   	     pcrSelection : PCR_SELECTION
+% 	   % Digest of the PCR indices and PCR values to verify when revealing 
+% 	   % sealed data or using a key that was wrapped to PCRs
+% 	   , digestAtRelease  : TPM_COMPOSITE_HASH
+% 	   % Composite digest value of the PCR values, at the time when the 
+%	   % sealing is performed
+% 	   , digestAtCreation : TPM_COMPOSITE_HASH
+% 	   #];
+
+  %% Information associated with PCR 
+  %% (8.8)
+  PCR_ATTRIBUTE : TYPE = [# pcrExtendLocal : LOCALITY_SELECTION
+  	    	      	  , pcrResetLocal : LOCALITY_SELECTION 
+  	    	      	  , pcrReset : bool #];
+
+  %% PCR flag array
+  PCR_ATTRIBUTES : TYPE = ARRAY[PCRINDEX->PCR_ATTRIBUTE];
+
+  allLocs : LOCALITY_SELECTION = add(0,add(1,add(2,add(3,add(4,emptyset))))); 
+  %TODO: not sure this is correct... can add any real numbers to set.
+
+  % (8.9)
+  pcrDebug : PCR_ATTRIBUTES
+  pcrInit : PCR_ATTRIBUTES
+
+  % Pcr attributes are available on a per PCR basis. Differs by platform 
+  % configuration
+  allResetAccess : PCR_ATTRIBUTES =
+    (LAMBDA (i:PCRINDEX) :
+      (# 
+         pcrReset := true
+       , pcrResetLocal := allLocs
+       , pcrExtendLocal := allLocs
+      #))
+
+  %% Some common PCR sets
+
+  %% Power on - unknown state
+  pcrsPower : PCRVALUES;
+%   pcrInfoLongDefault : PCR_INFO_LONG;
+
+  %% Following startup clear.  Nonresettable PCRs to 0 and resettable PCRs
+  %% to -1
+  pcrsReset(flags:PCR_ATTRIBUTES) : PCRVALUES =
+    (LAMBDA (i:PCRINDEX) : 
+      IF pcrReset(flags(i)) THEN resetOne ELSE reset ENDIF);
+
+  %% Following SENTER.  Nonresettable PCRs to same and resettable PCRs to 0
+  pcrsSenter(curr:PCRVALUES,flags:PCR_ATTRIBUTES) : PCRVALUES =
+    (LAMBDA (i:PCRINDEX) :
+      IF pcrReset(flags(i)) THEN reset ELSE curr(i) ENDIF);
+
+  pcrsResetSelection(curr:PCRVALUES,select:PCR_SELECTION) : PCRVALUES = 
+    (LAMBDA (i:PCRINDEX) :
+      IF member(i,select) THEN reset ELSE curr(i) ENDIF);
+
+  pcrsResetSelectCorrect: THEOREM    % TODO: is this proof correct?
+   FORALL (pcrs:PCRVALUES,pm:PCR_SELECTION) : 
+     pcrsResetSelection(pcrs,pm)=
+	(LAMBDA (i:PCRINDEX) : IF member(i,pm) THEN reset ELSE pcrs(i) ENDIF)
+    
+
+  %% Some common PCR flag settings
+  
+  
+  %% PCR extension operator
+  pcrsExtend(pcrs:PCRVALUES,i:PCRINDEX,hv:PCRVAL) : PCRVALUES = 
+     (pcrs WITH [(i) := extend(pcrs(i),hv)])
+
+  getPCRs(pcrs:PCRVALUES,pcrMask:PCR_SELECTION) : list[PCR] =
+     map(pcrs,pcrMask);
+  
+  getPCRsCorrectness: THEOREM 
+  (FORALL (pm:PCR_SELECTION, i:PCRINDEX, pcrs:PCRVALUES) :
+     member(i,pm)
+     =>
+     member(pcrs(i),getPCRs(pcrs,pm)));
+     
+  %% Theorems
+
+  %% Extension is antisymmetric  
+  antisym : THEOREM FORALL (h1,h2:PCRVAL, p:PCR) :
+    h1/=h2 => extend(p,h1) /= extend(p,h2)
+
+
+  %% ----
+  %%
+  %% Following theorems by Jessica Ims
+  %% Spring 2014
+  %%
+  %% ----
+
+  %% If a pcr is extended with two different hashes, the two extends are not the same.  
+  differentHashesExtend : THEOREM 
+   (FORALL (p:PCR, h0,h1:PCRVAL) : ( (h0 /= h1) => (extend(p,h0) /= extend(p,h1)) ))
+
+  %% If two different pcrs are extended with a hash, the two extends are not the same.  
+  differentPcrsExtend : THEOREM 
+   (FORALL (p0,p1:PCR, h:PCRVAL) : ( (p0 /= p1) => (extend(p0,h) /= extend(p1,h)) ))
+
+
+
+  %% Recursive Extend function and theorems
+
+  HASHES : TYPE = list[PCRVAL];
+
+  Q(p:PCR, hs:HASHES) : RECURSIVE PCR =
+     (IF null?(hs) THEN p ELSE Q( extend(p, car(hs)), cdr(hs) ) ENDIF)
+    MEASURE length(hs)
+
+
+  %% If two different pcrs are extended any number of times, the two extends are never the same.
+  differentPcrsExtendMulti : THEOREM 
+   (FORALL (p0,p1:PCR, hs:HASHES) : ( (p0 /= p1) => (Q(p0,hs) /= Q(p1,hs)) ))
+
+
+  %% If two hashlists are identical, extending each list with the same pcr will produce the same result.
+  diffHashListQ : THEOREM  
+   (FORALL (p:PCR, hs0,hs1:HASHES) : ( (hs0 = hs1) => (Q(p,hs0) = Q(p,hs1)) ))
+
+
+  %% If two pcrs are identical, extending each pcr with the same hashlist will produce the same result.
+  diffPcrsQ : THEOREM 
+   (FORALL (p0,p1:PCR, hs:HASHES) : ( (p0 = p1) => (Q(p0,hs) = Q(p1,hs)) ))
+
+
+  %% If two pcrs are identical and two hashlists are identical, extending one of the pcrs with one of the hashlists will produce the same result as xtending the other pcr with the other hashlists.
+  diffHashList_diffPcrs_Q : THEOREM  
+   (FORALL (p0,p1:PCR, hs0,hs1:HASHES) : ( ((p0 = p1) AND (hs0 = hs1)) => (Q(p0,hs0) = Q(p1,hs1)) ))
+
+
+  %% If the results of recursive extentions calls with the same hashlist are identical, the pcr inputs to those calls are identical.
+  qDiffPcrs : THEOREM 
+   (FORALL (p0,p1:PCR, hs:HASHES) : ( (Q(p0,hs) = Q(p1,hs)) => (p0 = p1) ))
+
+
+
+
+
+  %% If the results of two extentions on the same pcr are identical, the hashvalue inputs to those calls are identical.
+  extendDifferentHashes : THEOREM 
+   (FORALL (p:PCR, h0,h1:PCRVAL) : ( (extend(p,h0) = extend(p,h1)) => (h0 = h1) ))
+
+
+  %% The results of two extentions are identical if and only if the hashvalue inputs are identical and the pcr inputs are identical.
+  extendSameInputs : THEOREM 
+   (FORALL (p0,p1:PCR, h0,h1:PCRVAL) : ( (extend(p0,h0) = extend(p1,h1)) IFF ((h0 = h1) AND (p0 = p1)) ))
+
+
+  END pcr
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

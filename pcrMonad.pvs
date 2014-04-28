@@ -1,0 +1,106 @@
+%% ----
+%%
+%% PCR Monad Theory
+%%
+%% Author: Jessica Ims
+%% Created: Spring 2014
+%%
+%% Description: PCR in State Monad
+%% 
+%% Dependencies:
+%%  pcr.pvs
+%%  StateMonad.pvs
+%%
+%% ----
+
+pcrMonad[A,S,PCRVAL:TYPE+] : THEORY
+  BEGIN
+
+  importing pcr[PCRVAL];
+  importing StateMonad[PCR,PCR];
+
+
+
+  returnPcrPart1 : THEOREM 
+   (FORALL (p0,p1:PCR) : ( (p0 = p1) => (return(p0) = return(p1)) ))
+
+  %% If the returns of two pcrs are identical, the result of running the returns with the same state_pcr are identical.
+  sameReturn_sameRun : THEOREM 
+   (FORALL (p,p0,p1:PCR) : ( (return(p0) = return(p1)) => (runState(return(p0))(p) = runState(return(p1))(p)) ))
+
+  returnPcrPart2 : THEOREM 
+   (FORALL (p0,p1:PCR) : ( (return(p0) = return(p1)) => (p0 = p1) ))
+
+
+  %% Two pcrs are identical if and only if the returns of two pcrs are identical.
+  returnPcr : THEOREM 
+   (FORALL (p0,p1:PCR) : ( (p0 = p1) IFF (return(p0) = return(p1)) ))
+
+
+
+
+  %% Functions to call extend within the monad.
+  %% (modify function from StateMonad.pvs)
+
+  extendCurry (h:PCRVAL) : [PCR -> PCR] = (LAMBDA (p:PCR) : extend(p, h))
+  
+  extendWithStatePcr (h:PCRVAL) : [PCR -> State] = (LAMBDA (p:PCR) : modify(p, extendCurry(h)))
+
+
+
+  %% Bind PCR Theorems.
+
+
+  %% Bind Tests
+
+  hashVal : PCRVAL
+  outputPcr : PCR
+
+  %% Running pcr_bind with state RESET produces the expected result (outputPcr, extend(RESET, hashVal)).
+  bindTest1 : THEOREM
+    runState( return(outputPcr) >>= extendWithStatePcr(hashVal) )(reset) = (outputPcr, extend(reset, hashVal)) 
+
+  %% Running pcr_bind with state RESET produces the same result as running pcr_return with state extend(RESET)
+  %% using the same hashVal.
+  bindTest2 : THEOREM
+    runState( return(outputPcr) >>= extendWithStatePcr(hashVal) )(reset) = runState( return(outputPcr) )(extend(reset, hashVal))
+
+
+
+
+
+
+  %% If two statePcrs are not identical, the results of running pcr_bind with the two statePcrs (using the same hashvalue and same output pcr) are not identical.
+  bindPcr_differentStateGeneral : THEOREM
+    (FORALL (outPcr,statePcr0,statePcr1:PCR, h:PCRVAL) : ( (statePcr0 /= statePcr1) => (runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr0) /= runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr1)) ))
+
+
+  %% The result of running pcr_bind with state_pcr RESET and a given hashvalue and output_pcr is not identical to the result of running pcr_bind with state_pcr RESETONE and the same hashvalue and output_pcr.
+  bindPcr_differentState : THEOREM
+    (FORALL (outPcr:PCR, h:PCRVAL) : ( runState( return(outPcr) >>= extendWithStatePcr(h) )(reset) /= runState( return(outPcr) >>= extendWithStatePcr(h) )(resetOne) ))
+
+
+
+
+
+
+  END pcrMonad
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
