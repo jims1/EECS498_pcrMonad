@@ -12,8 +12,7 @@
     (NOT const-decl "[bool -> bool]" booleans nil)
     (number nonempty-type-decl nil numbers nil)
     (PRED type-eq-decl nil defined_types nil)
-    (list type-decl nil list_adt nil)
-    (every adt-def-decl "boolean" list_adt nil)
+    (list type-decl nil list_adt nil) nil
     (AND const-decl "[bool, bool -> bool]" booleans nil)
     (number_field_pred const-decl "[number -> boolean]" number_fields
      nil)
@@ -30,8 +29,7 @@
   (getPCRsCorrectness-1 nil 3607602549
    ("" (induct-and-simplify pm) nil nil)
    ((list type-decl nil list_adt nil)
-    (PRED type-eq-decl nil defined_types nil)
-    (every adt-def-decl "boolean" list_adt nil)
+    (PRED type-eq-decl nil defined_types nil) nil
     (AND const-decl "[bool, bool -> bool]" booleans nil)
     (PCR_SELECTION type-eq-decl nil pcr nil)
     (PCR type-decl nil pcr nil) (PCRVALUES type-eq-decl nil pcr nil)
@@ -54,8 +52,7 @@
      nil)
     (boolean nonempty-type-decl nil booleans nil)
     (number nonempty-type-decl nil numbers nil)
-    (list_induction formula-decl nil list_adt nil)
-    (map adt-def-decl "list[T1]" list_adt_map nil))
+    (list_induction formula-decl nil list_adt nil) nil)
    shostak))
  (antisym 0
   (antisym-1 nil 3607602574
@@ -266,5 +263,54 @@
     (AND const-decl "[bool, bool -> bool]" booleans nil)
     (bool nonempty-type-eq-decl nil booleans nil)
     (boolean nonempty-type-decl nil booleans nil))
+   shostak))
+ (diffPcrsQ_iff 0
+  (diffPcrsQ_iff-1 nil 3607714723
+   ("" (induct hs)
+    (("1" (skosimp)
+      (("1" (prop)
+        (("1" (grind) nil nil)
+         ("2" (lemma "qDiffPcrs")
+          (("2" (inst -1 "p0!1" "p1!1" "null") (("2" (grind) nil nil))
+            nil))
+          nil))
+        nil))
+      nil)
+     ("2" (induct-and-simplify cons2_var)
+      (("1" (decompose-equality -1) nil nil)
+       ("2" (lemma "qDiffPcrs")
+        (("2"
+          (inst -1 "extend(extend(p0!1, cons1_var!2), cons1_var!1)"
+           "extend(extend(p1!1, cons1_var!2), cons1_var!1)"
+           "cons2_var!1")
+          (("2" (grind)
+            (("2" (decompose-equality)
+              (("2" (decompose-equality) nil nil)) nil))
+            nil))
+          nil))
+        nil))
+      nil))
+    nil)
+   ((cons adt-constructor-decl "[[T, list] -> (cons?)]" list_adt nil)
+    (cons? adt-recognizer-decl "[list -> boolean]" list_adt nil)
+    (IMPLIES const-decl "[bool, bool -> bool]" booleans nil)
+    (AND const-decl "[bool, bool -> bool]" booleans nil)
+    (extend? adt-recognizer-decl "[PCR -> boolean]" pcr nil)
+    (pcr adt-accessor-decl "[(extend?) -> PCR]" pcr nil)
+    (extend adt-constructor-decl "[[PCR, PCRVAL] -> (extend?)]" pcr
+     nil)
+    (hash adt-accessor-decl "[(extend?) -> PCRVAL]" pcr nil)
+    (qDiffPcrs formula-decl nil pcr nil)
+    (null? adt-recognizer-decl "[list -> boolean]" list_adt nil)
+    (null adt-constructor-decl "(null?)" list_adt nil)
+    (list_induction formula-decl nil list_adt nil)
+    (PCRVAL formal-nonempty-type-decl nil pcr nil)
+    (Q def-decl "PCR" pcr nil)
+    (= const-decl "[T, T -> boolean]" equalities nil)
+    (IFF const-decl "[bool, bool -> bool]" booleans nil)
+    (bool nonempty-type-eq-decl nil booleans nil)
+    (PCR type-decl nil pcr nil) (HASHES type-eq-decl nil pcr nil)
+    (boolean nonempty-type-decl nil booleans nil)
+    (list type-decl nil list_adt nil))
    shostak)))
 

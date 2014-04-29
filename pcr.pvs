@@ -170,17 +170,17 @@ pcr[PCRVAL:TYPE+] : THEORY
    (FORALL (p0,p1:PCR, hs:HASHES) : ( (p0 /= p1) => (Q(p0,hs) /= Q(p1,hs)) ))
 
 
-  %% If two hashlists are identical, extending each list with the same pcr will produce the same result.
+  %% If two hashlists are identical, the results of extending each pcr with the same hashlist are identical.
   diffHashListQ : THEOREM  
    (FORALL (p:PCR, hs0,hs1:HASHES) : ( (hs0 = hs1) => (Q(p,hs0) = Q(p,hs1)) ))
 
 
-  %% If two pcrs are identical, extending each pcr with the same hashlist will produce the same result.
+  %% If two pcrs are identical, the results of extending each pcr with the same hashlist are identical.
   diffPcrsQ : THEOREM 
    (FORALL (p0,p1:PCR, hs:HASHES) : ( (p0 = p1) => (Q(p0,hs) = Q(p1,hs)) ))
 
 
-  %% If two pcrs are identical and two hashlists are identical, extending one of the pcrs with one of the hashlists will produce the same result as xtending the other pcr with the other hashlists.
+  %% If two pcrs are identical and two hashlists are identical, extending one of the pcrs with one of the hashlists will produce the same result as extending the other pcr with the other hashlists.
   diffHashList_diffPcrs_Q : THEOREM  
    (FORALL (p0,p1:PCR, hs0,hs1:HASHES) : ( ((p0 = p1) AND (hs0 = hs1)) => (Q(p0,hs0) = Q(p1,hs1)) ))
 
@@ -203,22 +203,21 @@ pcr[PCRVAL:TYPE+] : THEORY
    (FORALL (p0,p1:PCR, h0,h1:PCRVAL) : ( (extend(p0,h0) = extend(p1,h1)) IFF ((h0 = h1) AND (p0 = p1)) ))
 
 
+
+
+
+
+  %% Two pcrs are identical if and only if the results of extending each pcr with the same hashlist are identical.
+  diffPcrsQ_iff : THEOREM 
+   (FORALL (p0,p1:PCR, hs:HASHES) : ( (p0 = p1) IFF (Q(p0,hs) = Q(p1,hs)) ))
+
+
+
+
+
+
+
   END pcr
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -20,6 +20,9 @@ pcrMonad[A,S,PCRVAL:TYPE+] : THEORY
   importing StateMonad[PCR,PCR];
 
 
+  %%
+  %% Return Output PCR Theorems. 
+  %%
 
   returnPcrPart1 : THEOREM 
    (FORALL (p0,p1:PCR) : ( (p0 = p1) => (return(p0) = return(p1)) ))
@@ -32,15 +35,47 @@ pcrMonad[A,S,PCRVAL:TYPE+] : THEORY
    (FORALL (p0,p1:PCR) : ( (return(p0) = return(p1)) => (p0 = p1) ))
 
 
+
+
   %% Two pcrs are identical if and only if the returns of two pcrs are identical.
+  %%
   returnPcr : THEOREM 
    (FORALL (p0,p1:PCR) : ( (p0 = p1) IFF (return(p0) = return(p1)) ))
 
 
 
 
+
+
+  %%
+  %% Return State PCR Theorems. 
+  %%
+
+  sameStatePcr : THEOREM 
+   (FORALL (outPcr,statePcr0,statePcr1:PCR) : ( (statePcr0 = statePcr1) => (runState(return(outPcr))(statePcr0) = runState(return(outPcr))(statePcr1)) ))
+
+  sameReturnRun : THEOREM 
+   (FORALL (outPcr,statePcr0,statePcr1:PCR) : ( (runState(return(outPcr))(statePcr0) = runState(return(outPcr))(statePcr1)) => (statePcr0 = statePcr1) ))
+
+
+
+  %% Two state_pcrs are identical if and only if the results of running return with the two state_pcrs are identical.
+  %%
+  sameStatePcr_sameReturnRun : THEOREM 
+   (FORALL (outPcr,statePcr0,statePcr1:PCR) : ( (statePcr0 = statePcr1) IFF (runState(return(outPcr))(statePcr0) = runState(return(outPcr))(statePcr1)) ))
+
+
+
+
+
+  %%
+  %% Bind PCR Theorems.
+  %%
+
+  %
   %% Functions to call extend within the monad.
   %% (modify function from StateMonad.pvs)
+  %
 
   extendCurry (h:PCRVAL) : [PCR -> PCR] = (LAMBDA (p:PCR) : extend(p, h))
   
@@ -48,10 +83,9 @@ pcrMonad[A,S,PCRVAL:TYPE+] : THEORY
 
 
 
-  %% Bind PCR Theorems.
-
-
+  %
   %% Bind Tests
+  %
 
   hashVal : PCRVAL
   outputPcr : PCR
@@ -71,11 +105,13 @@ pcrMonad[A,S,PCRVAL:TYPE+] : THEORY
 
 
   %% If two statePcrs are not identical, the results of running pcr_bind with the two statePcrs (using the same hashvalue and same output pcr) are not identical.
+  %%
   bindPcr_differentStateGeneral : THEOREM
     (FORALL (outPcr,statePcr0,statePcr1:PCR, h:PCRVAL) : ( (statePcr0 /= statePcr1) => (runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr0) /= runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr1)) ))
 
 
   %% The result of running pcr_bind with state_pcr RESET and a given hashvalue and output_pcr is not identical to the result of running pcr_bind with state_pcr RESETONE and the same hashvalue and output_pcr.
+  %%
   bindPcr_differentState : THEOREM
     (FORALL (outPcr:PCR, h:PCRVAL) : ( runState( return(outPcr) >>= extendWithStatePcr(h) )(reset) /= runState( return(outPcr) >>= extendWithStatePcr(h) )(resetOne) ))
 
@@ -84,23 +120,55 @@ pcrMonad[A,S,PCRVAL:TYPE+] : THEORY
 
 
 
+  sameStatePcr_bind : THEOREM 
+    (FORALL (outPcr,statePcr0,statePcr1:PCR, h:PCRVAL) : ( (statePcr0 = statePcr1) => (runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr0) = runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr1)) ))
+
+  sameBindRun : THEOREM 
+    (FORALL (outPcr,statePcr0,statePcr1:PCR, h:PCRVAL) : ( (runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr0) = runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr1)) => (statePcr0 = statePcr1) ))
+
+
+  %% Two state_pcrs are identical if and only if the results of running bind with the two state_pcrs are identical.
+  %%
+  sameStatePcr_sameBindRun : THEOREM 
+    (FORALL (outPcr,statePcr0,statePcr1:PCR, h:PCRVAL) : ( (statePcr0 = statePcr1) IFF (runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr0) = runState( return(outPcr) >>= extendWithStatePcr(h) )(statePcr1)) ))
+
+
+
+
+
+  sameHash_bind : THEOREM 
+    (FORALL (outPcr,statePcr:PCR, h0,h1:PCRVAL) : ( (h0 = h1) => (runState( return(outPcr) >>= extendWithStatePcr(h0) )(statePcr) = runState( return(outPcr) >>= extendWithStatePcr(h1) )(statePcr)) ))
+
+  sameBindRun_hash : THEOREM 
+    (FORALL (outPcr,statePcr:PCR, h0,h1:PCRVAL) : ( (runState( return(outPcr) >>= extendWithStatePcr(h0) )(statePcr) = runState( return(outPcr) >>= extendWithStatePcr(h1) )(statePcr)) => (h0 = h1) ))
+
+
+  %% Two state_pcrs are identical if and only if the results of running bind with the two state_pcrs are identical.
+  %%
+  sameHash_sameBindRun : THEOREM 
+        (FORALL (outPcr,statePcr:PCR, h0,h1:PCRVAL) : ( (h0 = h1) IFF (runState( return(outPcr) >>= extendWithStatePcr(h0) )(statePcr) = runState( return(outPcr) >>= extendWithStatePcr(h1) )(statePcr)) ))
+
+
+
+
+
+
+  %% The results of running bind are identical if and only if the statePcrs are identical and the hashvalues are identical.
+  %%
+  sameBind : THEOREM 
+        (FORALL (outPcr,statePcr0,statePcr1:PCR, h0,h1:PCRVAL) : ( ((statePcr0 = statePcr1) AND (h0 = h1)) IFF (runState( return(outPcr) >>= extendWithStatePcr(h0) )(statePcr0) = runState( return(outPcr) >>= extendWithStatePcr(h1) )(statePcr1)) ))
+
+
+
+  %% The results of running bind are identical if and only if the statePcrs are identical, the hashvalues are identical, and the outpcrs are identical.
+  %%
+  sameBindTotal : THEOREM 
+        (FORALL (outPcr0,outPcr1,statePcr0,statePcr1:PCR, h0,h1:PCRVAL) : ( ((statePcr0 = statePcr1) AND (h0 = h1) AND (outPcr0 = outPcr1)) IFF (runState( return(outPcr0) >>= extendWithStatePcr(h0) )(statePcr0) = runState( return(outPcr1) >>= extendWithStatePcr(h1) )(statePcr1)) ))
+
+
+
+
   END pcrMonad
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
