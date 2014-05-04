@@ -166,6 +166,10 @@ pcrMonad[A,S,PCRVAL:TYPE+] : THEORY
         (FORALL (outPcr0,outPcr1,statePcr0,statePcr1:PCR, h0,h1:PCRVAL) : ( ((statePcr0 = statePcr1) AND (h0 = h1) AND (outPcr0 = outPcr1)) IFF (runState( return(outPcr0) >>= extendWithStatePcr(h0) )(statePcr0) = runState( return(outPcr1) >>= extendWithStatePcr(h1) )(statePcr1)) ))
 
 
+  %% Calling extend on the results of extend is the same as calling extend sequentially in the state monad.
+  %%
+  sequentialExtend : THEOREM
+    ( FORALL (outPcr,statePcr:PCR, h0,h1:PCRVAL) : (runState( return(outPcr) >>= extendWithStatePcr(h0) >>= extendWithStatePcr(h1) )(statePcr)) = (outPcr, extend(extend(statePcr, h0), h1)) )
 
 
   END pcrMonad

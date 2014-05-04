@@ -273,5 +273,16 @@
     (AND const-decl "[bool, bool -> bool]" booleans nil)
     (bool nonempty-type-eq-decl nil booleans nil)
     (boolean nonempty-type-decl nil booleans nil))
+   shostak))
+ (sequentialExtend 0
+  (sequentialExtend-1 nil 3608220179
+   ("" (skosimp) (("" (grind) nil nil)) nil)
+   ((>>= const-decl "State" StateMonad nil)
+    (extendWithStatePcr const-decl "[PCR -> State]" pcrMonad nil)
+    (modify const-decl "State" StateMonad nil)
+    (extendCurry const-decl "[PCR -> PCR]" pcrMonad nil)
+    (return const-decl "State" StateMonad nil)
+    (PCRVAL formal-nonempty-type-decl nil pcrMonad nil)
+    (PCR type-decl nil pcr nil))
    shostak)))
 
